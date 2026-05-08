@@ -1,13 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@clerk/clerk-expo";
 import { apiClient } from "@/api/client";
 
 export const useMetadata = () => {
+  const { isLoaded, isSignedIn } = useAuth();
+  const enabled = isLoaded && !!isSignedIn;
+
   const categoriesQuery = useQuery({
     queryKey: ["categories"],
     queryFn: async () => {
       const response = await apiClient.get("/expenses/categories");
       return response?.data?.data ?? [];
     },
+    enabled,
     retry: 1,
     staleTime: 1000 * 60 * 10,
   });
@@ -18,6 +23,8 @@ export const useMetadata = () => {
       const response = await apiClient.get("/expenses/groups"); // Need to implement this in backend if missing or use mock
       return response.data.data || [];
     },
+    enabled,
+    retry: 1,
   });
 
   return {
@@ -27,6 +34,6 @@ export const useMetadata = () => {
     isCategoriesFetching: categoriesQuery.isFetching,
     categoriesError: categoriesQuery.error,
     refetchCategories: categoriesQuery.refetch,
-    isLoading: categoriesQuery.isLoading || groupsQuery.isLoading,
+    isLoading: !isLoaded || categoriesQuery.isLoading || groupsQuery.isLoading,
   };
 };

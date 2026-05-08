@@ -1,38 +1,48 @@
 import React, { useState } from "react";
 import {
   View, Text, StyleSheet, ScrollView, RefreshControl,
-  TouchableOpacity, StatusBar, Dimensions,
+  TouchableOpacity, StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import { useAnalytics } from "@/features/analytics/hooks/useAnalytics";
-import { Colors } from "@/constants/theme";
+import { ApiErrorState } from "@/components/ApiState";
+import { useTheme } from "@/hooks/useTheme";
 import { formatINR, formatINRCompact } from "@/utils/currency";
-
-const { width } = Dimensions.get("window");
-const CHART_W = width - 48;
 
 const RANGES = ["1M", "3M", "6M", "1Y"] as const;
 type Range = typeof RANGES[number];
 
-const PIE_COLORS = [Colors.primary, Colors.accent, Colors.warning, Colors.danger, "#8B5CF6", "#EC4899"];
+
 
 export default function AnalyticsScreen() {
-  const { summary, breakdown, trends, insights, isLoading, refetch } = useAnalytics();
+  const { summary, breakdown, trends, insights, isLoading, isError, error, refetch, isRefetching } = useAnalytics();
   const [range, setRange] = useState<Range>("6M");
+  const tabBarHeight = useBottomTabBarHeight();
+  const { colors, theme } = useTheme();
+  const styles = getStyles(colors);
+
+  const PIE_COLORS = [colors.primary, colors.accent, colors.warning, colors.danger, "#8B5CF6", "#EC4899"];
 
   const totalSpend = breakdown.reduce((s: number, b: any) => s + b.amount, 0);
   const maxTrend = Math.max(...(trends.map((t: any) => t.amount) ?? [1]), 1);
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={theme === "dark" ? "light-content" : "dark-content"} />
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: tabBarHeight + 24 }]}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor={Colors.primary} />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />}
       >
+        {isError && (
+          <ApiErrorState error={error} onRetry={refetch} title="Could not load analytics" />
+        )}
+
+        {!isError && (
+          <>
         {/* Header */}
         <View style={styles.header}>
           <View>
@@ -40,7 +50,7 @@ export default function AnalyticsScreen() {
             <Text style={styles.pageTitle}>Your Spending Story</Text>
           </View>
           <View style={styles.headerIcon}>
-            <Ionicons name="analytics" size={22} color={Colors.primary} />
+            <Ionicons name="analytics" size={22} color={colors.primary} />
           </View>
         </View>
 
@@ -49,7 +59,7 @@ export default function AnalyticsScreen() {
           <View style={styles.kpiCard}>
             <Text style={styles.kpiLabel}>This Month</Text>
             <Text style={styles.kpiValue}>{formatINR(summary?.currentMonth ?? 0, 0)}</Text>
-            <Text style={[styles.kpiChange, { color: (summary?.difference ?? 0) > 0 ? Colors.danger : Colors.accent }]}>
+            <Text style={[styles.kpiChange, { color: (summary?.difference ?? 0) > 0 ? colors.danger : colors.accent }]}>
               {(summary?.difference ?? 0) > 0 ? "↑" : "↓"} vs last month
             </Text>
           </View>
@@ -58,12 +68,12 @@ export default function AnalyticsScreen() {
             <Text style={styles.kpiValue}>{formatINR(summary?.lastMonth ?? 0, 0)}</Text>
             <Text style={styles.kpiChange}>Baseline</Text>
           </View>
-          <View style={[styles.kpiCard, { backgroundColor: Colors.primaryMuted, borderColor: Colors.primary + "30" }]}>
+          <View style={[styles.kpiCard, { backgroundColor: colors.primary + "15", borderColor: colors.primary + "30" }]}>
             <Text style={styles.kpiLabel}>Daily Avg</Text>
-            <Text style={[styles.kpiValue, { color: Colors.primaryLight }]}>
+            <Text style={[styles.kpiValue, { color: colors.primary }]}>
               {formatINR((summary?.currentMonth ?? 0) / 30, 0)}
             </Text>
-            <Text style={[styles.kpiChange, { color: Colors.primary }]}>per day</Text>
+            <Text style={[styles.kpiChange, { color: colors.primary }]}>per day</Text>
           </View>
         </View>
 
@@ -96,7 +106,7 @@ export default function AnalyticsScreen() {
                 <View key={i} style={styles.barCol}>
                   <Text style={styles.barAmt}>{formatINRCompact(t.amount)}</Text>
                   <View style={styles.barWrap}>
-                    <View style={[styles.barFill, { height: `${Math.max(h, 4)}%`, backgroundColor: isLast ? Colors.primary : Colors.surfaceBorder }]} />
+                    <View style={[styles.barFill, { height: `${Math.max(h, 4)}%`, backgroundColor: isLast ? colors.primary : colors.surfaceBorder }]} />
                   </View>
                   <Text style={styles.barLabel}>{t.month}</Text>
                 </View>
@@ -130,7 +140,7 @@ export default function AnalyticsScreen() {
         {insights.length > 0 && (
           <View style={styles.card}>
             <View style={styles.insightHeader}>
-              <Ionicons name="sparkles" size={16} color={Colors.warning} />
+              <Ionicons name="sparkles" size={16} color={colors.warning} />
               <Text style={styles.cardLabel}>AI Financial Advisor</Text>
             </View>
             <Text style={styles.cardTitle}>Smart Recommendations</Text>
@@ -146,65 +156,66 @@ export default function AnalyticsScreen() {
           </View>
         )}
 
-        <View style={{ height: 100 }} />
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  safe:    { flex: 1, backgroundColor: Colors.bg },
+const getStyles = (colors: any) => StyleSheet.create({
+  safe:    { flex: 1, backgroundColor: colors.bg },
   scroll:  { flex: 1 },
-  content: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 100 },
+  content: { paddingHorizontal: 20, paddingTop: 8 },
 
   header:     { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 },
-  pageLabel:  { fontSize: 12, color: Colors.textMuted, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", marginBottom: 4 },
-  pageTitle:  { fontSize: 26, fontWeight: "800", color: Colors.textPrimary, letterSpacing: -0.5 },
-  headerIcon: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primaryMuted, borderWidth: 1, borderColor: Colors.primary + "30", alignItems: "center", justifyContent: "center" },
+  pageLabel:  { fontSize: 12, color: colors.textMuted, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", marginBottom: 4 },
+  pageTitle:  { fontSize: 26, fontWeight: "800", color: colors.textPrimary, letterSpacing: -0.5 },
+  headerIcon: { width: 44, height: 44, borderRadius: 12, backgroundColor: colors.primary + "15", borderWidth: 1, borderColor: colors.primary + "30", alignItems: "center", justifyContent: "center" },
 
   // KPI Row
   kpiRow:    { flexDirection: "row", gap: 10, marginBottom: 20 },
-  kpiCard:   { flex: 1, backgroundColor: Colors.surface, borderRadius: 16, padding: 14, borderWidth: 1, borderColor: Colors.surfaceBorder },
-  kpiLabel:  { fontSize: 10, color: Colors.textMuted, fontWeight: "700", letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 6 },
-  kpiValue:  { fontSize: 18, fontWeight: "800", color: Colors.textPrimary, letterSpacing: -0.5, marginBottom: 4 },
-  kpiChange: { fontSize: 11, color: Colors.textMuted, fontWeight: "500" },
+  kpiCard:   { flex: 1, backgroundColor: colors.surface, borderRadius: 16, padding: 14, borderWidth: 1, borderColor: colors.surfaceBorder },
+  kpiLabel:  { fontSize: 10, color: colors.textMuted, fontWeight: "700", letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 6 },
+  kpiValue:  { fontSize: 18, fontWeight: "800", color: colors.textPrimary, letterSpacing: -0.5, marginBottom: 4 },
+  kpiChange: { fontSize: 11, color: colors.textMuted, fontWeight: "500" },
 
   // Card
-  card:       { backgroundColor: Colors.surface, borderRadius: 20, padding: 20, marginBottom: 16, borderWidth: 1, borderColor: Colors.surfaceBorder },
+  card:       { backgroundColor: colors.surface, borderRadius: 20, padding: 20, marginBottom: 16, borderWidth: 1, borderColor: colors.surfaceBorder },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 },
-  cardLabel:  { fontSize: 11, color: Colors.textMuted, fontWeight: "700", letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 4 },
-  cardTitle:  { fontSize: 17, fontWeight: "700", color: Colors.textPrimary },
+  cardLabel:  { fontSize: 11, color: colors.textMuted, fontWeight: "700", letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 4 },
+  cardTitle:  { fontSize: 17, fontWeight: "700", color: colors.textPrimary },
 
   // Range selector
-  rangeRow:       { flexDirection: "row", backgroundColor: Colors.surfaceElevated, borderRadius: 10, padding: 3, borderWidth: 1, borderColor: Colors.surfaceBorder },
+  rangeRow:       { flexDirection: "row", backgroundColor: colors.surfaceElevated, borderRadius: 10, padding: 3, borderWidth: 1, borderColor: colors.surfaceBorder },
   rangeBtn:       { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 7 },
-  rangeBtnActive: { backgroundColor: Colors.primary },
-  rangeTxt:       { fontSize: 11, fontWeight: "700", color: Colors.textMuted },
+  rangeBtnActive: { backgroundColor: colors.primary },
+  rangeTxt:       { fontSize: 11, fontWeight: "700", color: colors.textMuted },
   rangeTxtActive: { color: "#fff" },
 
   // Bar chart
   barChart: { flexDirection: "row", alignItems: "flex-end", height: 120, gap: 8 },
   barCol:   { flex: 1, alignItems: "center" },
-  barAmt:   { fontSize: 9, color: Colors.textMuted, marginBottom: 4, fontWeight: "600" },
+  barAmt:   { fontSize: 9, color: colors.textMuted, marginBottom: 4, fontWeight: "600" },
   barWrap:  { width: "100%", height: 80, justifyContent: "flex-end", borderRadius: 4, overflow: "hidden" },
   barFill:  { width: "100%", borderRadius: 4 },
-  barLabel: { fontSize: 10, color: Colors.textMuted, marginTop: 6, fontWeight: "600" },
+  barLabel: { fontSize: 10, color: colors.textMuted, marginTop: 6, fontWeight: "600" },
 
   // Category
   catRow:      { flexDirection: "row", alignItems: "center", marginBottom: 14, gap: 8 },
   catDot:      { width: 10, height: 10, borderRadius: 5 },
-  catName:     { fontSize: 13, color: Colors.textSecondary, fontWeight: "600", width: 80 },
-  catBarTrack: { flex: 1, height: 6, borderRadius: 3, backgroundColor: Colors.surfaceBorder, overflow: "hidden" },
+  catName:     { fontSize: 13, color: colors.textSecondary, fontWeight: "600", width: 80 },
+  catBarTrack: { flex: 1, height: 6, borderRadius: 3, backgroundColor: colors.surfaceBorder, overflow: "hidden" },
   catBarFill:  { height: "100%", borderRadius: 3 },
-  catPct:      { fontSize: 12, color: Colors.textMuted, width: 30, textAlign: "right" },
-  catAmt:      { fontSize: 13, fontWeight: "700", color: Colors.textPrimary, width: 52, textAlign: "right" },
+  catPct:      { fontSize: 12, color: colors.textMuted, width: 30, textAlign: "right" },
+  catAmt:      { fontSize: 13, fontWeight: "700", color: colors.textPrimary, width: 52, textAlign: "right" },
 
   // Insights
   insightHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 },
   insightRow:    { flexDirection: "row", alignItems: "flex-start", gap: 12, marginBottom: 14 },
-  insightBullet: { width: 24, height: 24, borderRadius: 8, backgroundColor: Colors.warning + "20", alignItems: "center", justifyContent: "center", flexShrink: 0 },
-  insightNum:    { fontSize: 11, fontWeight: "800", color: Colors.warning },
-  insightTxt:    { flex: 1, fontSize: 14, color: Colors.textSecondary, lineHeight: 21 },
+  insightBullet: { width: 24, height: 24, borderRadius: 8, backgroundColor: colors.warning + "20", alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  insightNum:    { fontSize: 11, fontWeight: "800", color: colors.warning },
+  insightTxt:    { flex: 1, fontSize: 14, color: colors.textSecondary, lineHeight: 21 },
 });
 
 

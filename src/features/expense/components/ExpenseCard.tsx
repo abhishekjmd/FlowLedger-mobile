@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { format } from "date-fns";
-import { Colors } from "@/constants/theme";
+import { useTheme } from "@/hooks/useTheme";
 import { formatINR } from "@/utils/currency";
 
 const CATEGORY_ICONS: Record<string, string> = {
@@ -12,12 +12,6 @@ const CATEGORY_ICONS: Record<string, string> = {
   Travel: "airplane-outline", Education: "school-outline",
 };
 
-const CATEGORY_COLORS: Record<string, string> = {
-  Food: Colors.warning, Transport: "#8B5CF6", Shopping: Colors.danger,
-  Health: Colors.accent, Entertainment: "#EC4899", Bills: Colors.primary,
-  Travel: "#0EA5E9", Education: Colors.accent,
-};
-
 interface ExpenseCardProps {
   expense: any;
   onPress: () => void;
@@ -25,9 +19,18 @@ interface ExpenseCardProps {
 }
 
 export const ExpenseCard: React.FC<ExpenseCardProps> = ({ expense, onPress, onDelete }) => {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
+
+  const CATEGORY_COLORS: Record<string, string> = {
+    Food: colors.warning, Transport: "#8B5CF6", Shopping: colors.danger,
+    Health: colors.accent, Entertainment: "#EC4899", Bills: colors.primary,
+    Travel: "#0EA5E9", Education: colors.accent,
+  };
+
   const catName = expense.category?.name ?? "Other";
   const icon    = (CATEGORY_ICONS[catName] ?? "receipt-outline") as any;
-  const color   = CATEGORY_COLORS[catName] ?? Colors.primary;
+  const color   = CATEGORY_COLORS[catName] ?? colors.primary;
   const amount  = Number(expense.amount);
 
   return (
@@ -48,7 +51,7 @@ export const ExpenseCard: React.FC<ExpenseCardProps> = ({ expense, onPress, onDe
           {expense.group && (
             <>
               <Text style={styles.dot}>·</Text>
-              <Ionicons name="people-outline" size={11} color={Colors.textMuted} />
+              <Ionicons name="people-outline" size={11} color={colors.textMuted} />
             </>
           )}
         </View>
@@ -58,30 +61,30 @@ export const ExpenseCard: React.FC<ExpenseCardProps> = ({ expense, onPress, onDe
       <View style={styles.right}>
         <Text style={styles.amount}>-{formatINR(amount)}</Text>
         <TouchableOpacity onPress={onDelete} style={styles.deleteBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Ionicons name="trash-outline" size={14} color={Colors.textMuted} />
+          <Ionicons name="trash-outline" size={14} color={colors.textMuted} />
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   card: {
     flexDirection: "row", alignItems: "center",
-    backgroundColor: Colors.surface, borderRadius: 16, padding: 14,
-    marginBottom: 10, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    backgroundColor: colors.surface, borderRadius: 16, padding: 14,
+    marginBottom: 10, borderWidth: 1, borderColor: colors.surfaceBorder,
   },
   iconWrap: { width: 44, height: 44, borderRadius: 13, alignItems: "center", justifyContent: "center", marginRight: 12 },
   info:     { flex: 1 },
-  title:    { fontSize: 15, fontWeight: "700", color: Colors.textPrimary, marginBottom: 6 },
+  title:    { fontSize: 15, fontWeight: "700", color: colors.textPrimary, marginBottom: 6 },
   metaRow:  { flexDirection: "row", alignItems: "center", gap: 6 },
   catPill:  { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 },
   catText:  { fontSize: 11, fontWeight: "700" },
-  date:     { fontSize: 12, color: Colors.textMuted, fontWeight: "500" },
-  dot:      { fontSize: 12, color: Colors.textMuted },
+  date:     { fontSize: 12, color: colors.textMuted, fontWeight: "500" },
+  dot:      { fontSize: 12, color: colors.textMuted },
   right:    { alignItems: "flex-end", gap: 8 },
-  amount:   { fontSize: 15, fontWeight: "800", color: Colors.textPrimary, letterSpacing: -0.3 },
-  deleteBtn: { width: 26, height: 26, borderRadius: 8, backgroundColor: Colors.dangerMuted, alignItems: "center", justifyContent: "center" },
+  amount:   { fontSize: 15, fontWeight: "800", color: colors.textPrimary, letterSpacing: -0.3 },
+  deleteBtn: { width: 26, height: 26, borderRadius: 8, backgroundColor: colors.danger + "15", alignItems: "center", justifyContent: "center" },
 });
 
 

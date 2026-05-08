@@ -8,6 +8,7 @@ import {
   View,
 } from "react-native";
 import { Colors } from "@/constants/theme";
+import { useTheme } from "@/hooks/useTheme";
 
 interface ButtonProps extends TouchableOpacityProps {
   title: string;
@@ -27,7 +28,10 @@ export const Button: React.FC<ButtonProps> = ({
   style,
   ...props
 }) => {
+  const { colors } = useTheme();
   const isDisabled = disabled || loading;
+
+  const styles = getStyles(colors);
 
   const containerStyle = [
     styles.base,
@@ -47,7 +51,7 @@ export const Button: React.FC<ButtonProps> = ({
       {...props}
     >
       {loading ? (
-        <ActivityIndicator color={variant === "ghost" ? Colors.primary : "#fff"} />
+        <ActivityIndicator color={variant === "ghost" ? colors.primary : "#fff"} />
       ) : (
         <View style={styles.inner}>
           {icon && <View style={styles.iconWrap}>{icon}</View>}
@@ -58,7 +62,7 @@ export const Button: React.FC<ButtonProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   base: {
     borderRadius: 16,
     alignItems: "center",
@@ -74,26 +78,26 @@ const styles = StyleSheet.create({
 
   // Variants
   primary: {
-    backgroundColor: Colors.primary,
-    shadowColor: Colors.primary,
+    backgroundColor: colors.primary,
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.35,
     shadowRadius: 16,
     elevation: 8,
   },
   secondary: {
-    backgroundColor: Colors.surfaceElevated,
+    backgroundColor: colors.surfaceElevated,
     borderWidth: 1,
-    borderColor: Colors.surfaceBorder,
+    borderColor: colors.surfaceBorder,
   },
   ghost: {
-    backgroundColor: Colors.primaryMuted,
+    backgroundColor: colors.primaryMuted,
     borderWidth: 1,
-    borderColor: Colors.primary + "40",
+    borderColor: colors.primary + "40",
   },
   danger: {
-    backgroundColor: Colors.danger,
-    shadowColor: Colors.danger,
+    backgroundColor: colors.danger,
+    shadowColor: colors.danger,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
@@ -110,8 +114,8 @@ const styles = StyleSheet.create({
   // Labels
   label: { fontWeight: "700" },
   label_primary:   { color: "#fff" },
-  label_secondary: { color: Colors.textPrimary },
-  label_ghost:     { color: Colors.primary },
+  label_secondary: { color: colors.textPrimary },
+  label_ghost:     { color: colors.primary },
   label_danger:    { color: "#fff" },
   labelSize_sm:    { fontSize: 14 },
   labelSize_md:    { fontSize: 15 },

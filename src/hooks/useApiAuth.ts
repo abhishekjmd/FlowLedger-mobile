@@ -1,20 +1,24 @@
 import { useAuth } from "@clerk/clerk-expo";
 import { useEffect } from "react";
-import { setAuthToken } from "@/api/client";
+import { setTokenGetter } from "@/api/client";
 
+/**
+ * Wires Clerk's getToken into the global API client.
+ * By storing the *getter function* (not the token value), every API request
+ * fetches a fresh JWT — avoiding the race condition seen in auth screens.
+ */
 export function useApiAuth() {
   const { getToken, isSignedIn } = useAuth();
 
   useEffect(() => {
-    const syncToken = async () => {
-      if (isSignedIn) {
-        const token = await getToken();
-        setAuthToken(token);
-      } else {
-        setAuthToken(null);
-      }
+    if (isSignedIn) {
+      setTokenGetter(getToken);
+    } else {
+      setTokenGetter(null);
+    }
+
+    return () => {
+      setTokenGetter(null);
     };
-    syncToken();
   }, [isSignedIn, getToken]);
 }
-
