@@ -3,60 +3,58 @@
  * Enterprise-grade fintech color palette and design tokens
  */
 
-export const Colors = {
-  // Brand
-  primary: '#6366F1',       // Indigo — trust, intelligence
+export const LightColors = {
+  primary: '#6366F1',
   primaryLight: '#818CF8',
   primaryDark: '#4F46E5',
   primaryMuted: '#6366F115',
-
-  // Accent
-  accent: '#10B981',        // Emerald — growth, money
+  accent: '#10B981',
   accentLight: '#34D399',
   accentMuted: '#10B98115',
-
-  // Danger
   danger: '#F43F5E',
   dangerMuted: '#F43F5E15',
-
-  // Warning
   warning: '#F59E0B',
   warningMuted: '#F59E0B15',
+  bg: '#F8FAFC',
+  surface: '#FFFFFF',
+  surfaceElevated: '#FFFFFF',
+  surfaceBorder: '#E2E8F0',
+  textPrimary: '#0F172A',
+  textSecondary: '#475569',
+  textMuted: '#94A3B8',
+  gradientPrimary: ['#6366F1', '#8B5CF6'] as const,
+  gradientAccent:  ['#10B981', '#059669'] as const,
+  gradientCard:    ['#FFFFFF', '#F1F5F9'] as const,
+  gradientDanger:  ['#F43F5E', '#E11D48'] as const,
+};
 
-  // Surfaces — deep layered dark
-  bg: '#080B14',            // True dark background
-  surface: '#0F1421',       // Card surface
-  surfaceElevated: '#161D2E', // Elevated card
-  surfaceBorder: '#1E2A42', // Subtle border
-
-  // Text
-  textPrimary: '#F0F4FF',   // Near-white — crisp
-  textSecondary: '#8B9CC8', // Muted blue-grey
-  textMuted: '#4A5680',     // Dimmed
-
-  // Gradients (used inline as array for LinearGradient)
+export const DarkColors = {
+  primary: '#6366F1',
+  primaryLight: '#818CF8',
+  primaryDark: '#4F46E5',
+  primaryMuted: '#6366F115',
+  accent: '#10B981',
+  accentLight: '#34D399',
+  accentMuted: '#10B98115',
+  danger: '#F43F5E',
+  dangerMuted: '#F43F5E15',
+  warning: '#F59E0B',
+  warningMuted: '#F59E0B15',
+  bg: '#080B14',
+  surface: '#0F1421',
+  surfaceElevated: '#161D2E',
+  surfaceBorder: '#1E2A42',
+  textPrimary: '#F0F4FF',
+  textSecondary: '#8B9CC8',
+  textMuted: '#4A5680',
   gradientPrimary: ['#6366F1', '#8B5CF6'] as const,
   gradientAccent:  ['#10B981', '#059669'] as const,
   gradientCard:    ['#0F1421', '#161D2E'] as const,
   gradientDanger:  ['#F43F5E', '#E11D48'] as const,
-
-  light: {
-    text: '#F0F4FF',
-    background: '#080B14',
-    tint: '#6366F1',
-    icon: '#8B9CC8',
-    tabIconDefault: '#4A5680',
-    tabIconSelected: '#6366F1',
-  },
-  dark: {
-    text: '#F0F4FF',
-    background: '#080B14',
-    tint: '#6366F1',
-    icon: '#8B9CC8',
-    tabIconDefault: '#4A5680',
-    tabIconSelected: '#6366F1',
-  },
 };
+
+// Default export (Dark by default as requested in original requirements, but togglable)
+export const Colors = DarkColors;
 
 export const Spacing = {
   xs: 4,

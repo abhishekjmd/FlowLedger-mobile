@@ -4,20 +4,22 @@ import {
   TouchableOpacity, StatusBar, Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useDashboard } from "@/hooks/useDashboard";
 import { useUser } from "@clerk/clerk-expo";
-import { Colors } from "@/constants/theme";
+import { ApiErrorState } from "@/components/ApiState";
+import { useTheme } from "@/hooks/useTheme";
 import { formatINR } from "@/utils/currency";
 
 const { width } = Dimensions.get("window");
 
 const QUICK_ACTIONS = [
-  { icon: "add-circle",      label: "Add",      color: Colors.primary,  route: "/(tabs)/explore" },
-  { icon: "people",          label: "Groups",   color: "#8B5CF6",       route: "/(tabs)/groups" },
-  { icon: "bar-chart",       label: "Analytics",color: Colors.accent,   route: "/(tabs)/analytics" },
-  { icon: "repeat",          label: "Recurring",color: Colors.warning,  route: "/(tabs)/explore" },
+  { icon: "add-circle",      label: "Add",      color: "primary",  route: "/(tabs)/explore" },
+  { icon: "people",          label: "Groups",   color: "#8B5CF6",  route: "/(tabs)/groups" },
+  { icon: "bar-chart",       label: "Analytics",color: "accent",   route: "/(tabs)/analytics" },
+  { icon: "repeat",          label: "Recurring",color: "warning",  route: "/(tabs)/explore" },
 ];
 
 const CATEGORY_ICONS: Record<string, string> = {
@@ -28,8 +30,10 @@ const CATEGORY_ICONS: Record<string, string> = {
 
 export default function DashboardScreen() {
   const { user } = useUser();
-  const displayName = user?.firstName || user?.fullName?.split(" ")[0] || "Member";
-  const { summary, categories, insights, recentExpenses, isLoading, isRefetching, refetch } = useDashboard();
+  const { summary, categories, insights, recentExpenses, isLoading, isError, error, isRefetching, refetch } = useDashboard();
+  const tabBarHeight = useBottomTabBarHeight();
+  const { colors, theme } = useTheme();
+  const styles = getStyles(colors);
 
   const growthPct = summary?.lastMonth
     ? (((summary.currentMonth - summary.lastMonth) / summary.lastMonth) * 100).toFixed(1)
@@ -38,25 +42,34 @@ export default function DashboardScreen() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
+  const QUICK_ACTIONS = [
+    { icon: "add-circle",      label: "Add",      color: colors.primary,  route: "/(tabs)/explore" },
+    { icon: "people",          label: "Groups",   color: "#8B5CF6",       route: "/(tabs)/groups" },
+    { icon: "bar-chart",       label: "Analytics",color: colors.accent,   route: "/(tabs)/analytics" },
+    { icon: "repeat",          label: "Recurring",color: colors.warning,  route: "/(tabs)/explore" },
+  ];
+
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={theme === "dark" ? "light-content" : "dark-content"} />
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: tabBarHeight + 24 }]}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={Colors.primary} />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />}
       >
+        {isError && (
+          <ApiErrorState error={error} onRetry={refetch} title="Could not load dashboard" />
+        )}
+
+        {!isError && (
+          <>
         {/* Header */}
         <View style={styles.header}>
           <View>
             <Text style={styles.greeting}>{greeting} 👋</Text>
-            <Text style={styles.username}>{user?.name?.split(" ")[0] ?? "Member"}</Text>
+            <Text style={styles.username}>{user?.firstName || user?.fullName?.split(" ")[0] || "Member"}</Text>
           </View>
-          <TouchableOpacity style={styles.notifBtn}>
-            <Ionicons name="notifications-outline" size={22} color={Colors.textSecondary} />
-            <View style={styles.notifDot} />
-          </TouchableOpacity>
         </View>
 
         {/* Balance Hero Card */}
@@ -68,8 +81,8 @@ export default function DashboardScreen() {
           </Text>
           <View style={styles.balanceMeta}>
             <View style={[styles.badge, isUp ? styles.badgeRed : styles.badgeGreen]}>
-              <Ionicons name={isUp ? "trending-up" : "trending-down"} size={13} color={isUp ? Colors.danger : Colors.accent} />
-              <Text style={[styles.badgeText, { color: isUp ? Colors.danger : Colors.accent }]}>
+              <Ionicons name={isUp ? "trending-up" : "trending-down"} size={13} color={isUp ? colors.danger : colors.accent} />
+              <Text style={[styles.badgeText, { color: isUp ? colors.danger : colors.accent }]}>
                 {growthPct ? `${isUp ? "+" : ""}${growthPct}%` : "—"}
               </Text>
             </View>
@@ -102,7 +115,7 @@ export default function DashboardScreen() {
               {insights.map((insight: string, i: number) => (
                 <View key={i} style={styles.insightCard}>
                   <View style={styles.insightIcon}>
-                    <Ionicons name="sparkles" size={16} color={Colors.warning} />
+                    <Ionicons name="sparkles" size={16} color={colors.warning} />
                   </View>
                   <Text style={styles.insightText} numberOfLines={3}>{insight}</Text>
                 </View>
@@ -125,8 +138,8 @@ export default function DashboardScreen() {
               const pct = total > 0 ? (cat.amount / total) * 100 : 0;
               return (
                 <View key={cat.id ?? i} style={styles.catRow}>
-                  <View style={[styles.catIcon, { backgroundColor: Colors.primary + "15" }]}>
-                    <Ionicons name={(CATEGORY_ICONS[cat.name] ?? "receipt-outline") as any} size={17} color={Colors.primary} />
+                  <View style={[styles.catIcon, { backgroundColor: colors.primary + "15" }]}>
+                    <Ionicons name={(CATEGORY_ICONS[cat.name] ?? "receipt-outline") as any} size={17} color={colors.primary} />
                   </View>
                   <View style={styles.catInfo}>
                     <View style={styles.catMeta}>
@@ -143,7 +156,7 @@ export default function DashboardScreen() {
           </View>
         )}
 
-        {/* Recent Transactions */}
+        {/* Recent Activity */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Recent Activity</Text>
@@ -153,8 +166,8 @@ export default function DashboardScreen() {
           </View>
           {recentExpenses?.slice(0, 5).map((exp: any) => (
             <View key={exp.id} style={styles.txnRow}>
-              <View style={styles.txnIcon}>
-                <Ionicons name={(CATEGORY_ICONS[exp.category?.name] ?? "receipt-outline") as any} size={18} color={Colors.primary} />
+              <View style={[styles.txnIcon, { backgroundColor: colors.primary + "15" }]}>
+                <Ionicons name={(CATEGORY_ICONS[exp.category?.name] ?? "receipt-outline") as any} size={18} color={colors.primary} />
               </View>
               <View style={styles.txnInfo}>
                 <Text style={styles.txnTitle} numberOfLines={1}>{exp.title}</Text>
@@ -165,40 +178,33 @@ export default function DashboardScreen() {
           ))}
           {!isLoading && !recentExpenses?.length && (
             <View style={styles.emptyState}>
-              <Ionicons name="receipt-outline" size={48} color={Colors.surfaceBorder} />
+              <Ionicons name="receipt-outline" size={48} color={colors.surfaceBorder} />
               <Text style={styles.emptyText}>No transactions yet</Text>
             </View>
           )}
         </View>
 
-        <View style={{ height: 24 }} />
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  safe:    { flex: 1, backgroundColor: Colors.bg },
+const getStyles = (colors: any) => StyleSheet.create({
+  safe:    { flex: 1, backgroundColor: colors.bg },
   scroll:  { flex: 1 },
-  content: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 100 },
+  content: { paddingHorizontal: 20, paddingTop: 8 },
 
   header:    { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 24 },
-  greeting:  { fontSize: 14, color: Colors.textMuted, fontWeight: "500", marginBottom: 2 },
-  username:  { fontSize: 26, fontWeight: "800", color: Colors.textPrimary, letterSpacing: -0.5 },
-  notifBtn:  {
-    width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.surface,
-    borderWidth: 1, borderColor: Colors.surfaceBorder, alignItems: "center", justifyContent: "center",
-  },
-  notifDot: {
-    position: "absolute", top: 10, right: 10, width: 8, height: 8,
-    borderRadius: 4, backgroundColor: Colors.danger, borderWidth: 1.5, borderColor: Colors.bg,
-  },
-
+  greeting:  { fontSize: 14, color: colors.textMuted, fontWeight: "500", marginBottom: 2 },
+  username:  { fontSize: 26, fontWeight: "800", color: colors.textPrimary, letterSpacing: -0.5 },
+  
   // Balance Card
   balanceCard: {
-    backgroundColor: Colors.primary, borderRadius: 24, padding: 24, marginBottom: 24,
+    backgroundColor: colors.primary, borderRadius: 24, padding: 24, marginBottom: 24,
     overflow: "hidden",
-    shadowColor: Colors.primary, shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.4, shadowRadius: 24, elevation: 12,
+    shadowColor: colors.primary, shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.4, shadowRadius: 24, elevation: 12,
   },
   balanceBg: {
     position: "absolute", top: -40, right: -40, width: 160, height: 160,
@@ -219,47 +225,45 @@ const styles = StyleSheet.create({
   actionsRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 28 },
   actionBtn:  { alignItems: "center", flex: 1 },
   actionIcon: { width: 52, height: 52, borderRadius: 16, borderWidth: 1, alignItems: "center", justifyContent: "center", marginBottom: 6 },
-  actionLabel: { fontSize: 11, color: Colors.textSecondary, fontWeight: "600" },
+  actionLabel: { fontSize: 11, color: colors.textSecondary, fontWeight: "600" },
 
   // Section
   section:       { marginBottom: 28 },
   sectionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 },
-  sectionTitle:  { fontSize: 16, fontWeight: "800", color: Colors.textPrimary, letterSpacing: -0.3 },
-  seeAll:        { fontSize: 13, color: Colors.primary, fontWeight: "600" },
+  sectionTitle:  { fontSize: 16, fontWeight: "800", color: colors.textPrimary, letterSpacing: -0.3 },
+  seeAll:        { fontSize: 13, color: colors.primary, fontWeight: "600" },
 
   // Insights
   insightsScroll: { marginHorizontal: -20, paddingHorizontal: 20 },
   insightCard: {
-    width: width * 0.72, backgroundColor: Colors.surface, borderRadius: 16, padding: 16,
-    marginRight: 12, borderWidth: 1, borderColor: Colors.surfaceBorder,
+    width: width * 0.72, backgroundColor: colors.surface, borderRadius: 16, padding: 16,
+    marginRight: 12, borderWidth: 1, borderColor: colors.surfaceBorder,
   },
   insightIcon: {
-    width: 32, height: 32, borderRadius: 10, backgroundColor: Colors.warning + "18",
+    width: 32, height: 32, borderRadius: 10, backgroundColor: colors.warning + "18",
     alignItems: "center", justifyContent: "center", marginBottom: 10,
   },
-  insightText: { fontSize: 14, color: Colors.textSecondary, lineHeight: 20 },
+  insightText: { fontSize: 14, color: colors.textSecondary, lineHeight: 20 },
 
   // Category
   catRow:    { flexDirection: "row", alignItems: "center", marginBottom: 14 },
   catIcon:   { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center", marginRight: 12 },
   catInfo:   { flex: 1 },
   catMeta:   { flexDirection: "row", justifyContent: "space-between", marginBottom: 6 },
-  catName:   { fontSize: 14, fontWeight: "600", color: Colors.textPrimary },
-  catAmt:    { fontSize: 14, fontWeight: "700", color: Colors.textPrimary },
-  catBarBg:  { height: 4, borderRadius: 2, backgroundColor: Colors.surfaceBorder, overflow: "hidden" },
-  catBarFill: { height: "100%", borderRadius: 2, backgroundColor: Colors.primary },
+  catName:   { fontSize: 14, fontWeight: "600", color: colors.textPrimary },
+  catAmt:    { fontSize: 14, fontWeight: "700", color: colors.textPrimary },
+  catBarBg:  { height: 4, borderRadius: 2, backgroundColor: colors.surfaceBorder, overflow: "hidden" },
+  catBarFill: { height: "100%", borderRadius: 2, backgroundColor: colors.primary },
 
   // Transactions
-  txnRow:   { flexDirection: "row", alignItems: "center", paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: Colors.surfaceBorder + "50" },
-  txnIcon:  { width: 42, height: 42, borderRadius: 12, backgroundColor: Colors.primaryMuted, alignItems: "center", justifyContent: "center", marginRight: 12 },
+  txnRow:   { flexDirection: "row", alignItems: "center", paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.surfaceBorder + "50" },
+  txnIcon:  { width: 42, height: 42, borderRadius: 12, alignItems: "center", justifyContent: "center", marginRight: 12 },
   txnInfo:  { flex: 1 },
-  txnTitle: { fontSize: 15, fontWeight: "600", color: Colors.textPrimary },
-  txnDate:  { fontSize: 12, color: Colors.textMuted, marginTop: 2 },
-  txnAmt:   { fontSize: 15, fontWeight: "700", color: Colors.danger },
+  txnTitle: { fontSize: 15, fontWeight: "600", color: colors.textPrimary },
+  txnDate:  { fontSize: 12, color: colors.textMuted, marginTop: 2 },
+  txnAmt:   { fontSize: 15, fontWeight: "700", color: colors.danger },
 
   // Empty
   emptyState: { alignItems: "center", paddingVertical: 40, gap: 12 },
-  emptyText:  { fontSize: 15, color: Colors.textMuted },
+  emptyText:  { fontSize: 15, color: colors.textMuted },
 });
-
-

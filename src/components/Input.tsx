@@ -6,9 +6,9 @@ import {
   TextInputProps,
   StyleSheet,
   Animated,
-  TouchableWithoutFeedback,
 } from "react-native";
 import { Colors } from "@/constants/theme";
+import { useTheme } from "@/hooks/useTheme";
 
 interface InputProps extends TextInputProps {
   label?: string;
@@ -29,7 +29,9 @@ export const Input: React.FC<InputProps> = ({
   style,
   ...props
 }) => {
+  const { colors } = useTheme();
   const borderAnim = useRef(new Animated.Value(0)).current;
+  const styles = getStyles(colors);
 
   const handleFocus = (e: any) => {
     Animated.timing(borderAnim, {
@@ -52,8 +54,8 @@ export const Input: React.FC<InputProps> = ({
   const borderColor = borderAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [
-      error ? Colors.danger + "80" : Colors.surfaceBorder,
-      error ? Colors.danger : Colors.primary,
+      error ? colors.danger + "80" : colors.surfaceBorder,
+      error ? colors.danger : colors.primary,
     ],
   });
 
@@ -63,9 +65,14 @@ export const Input: React.FC<InputProps> = ({
       <Animated.View style={[styles.inputWrapper, { borderColor }]}>
         {leftIcon && <View style={styles.icon}>{leftIcon}</View>}
         <TextInput
-          style={[styles.input, leftIcon && styles.inputWithLeft, rightIcon && styles.inputWithRight, style]}
-          placeholderTextColor={Colors.textMuted}
-          selectionColor={Colors.primary}
+          style={[
+            styles.input,
+            leftIcon ? styles.inputWithLeft : null,
+            rightIcon ? styles.inputWithRight : null,
+            style,
+          ]}
+          placeholderTextColor={colors.textMuted}
+          selectionColor={colors.primary}
           onFocus={handleFocus}
           onBlur={handleBlur}
           {...props}
@@ -81,12 +88,12 @@ export const Input: React.FC<InputProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: { marginBottom: 20 },
   label: {
     fontSize: 12,
     fontWeight: "700",
-    color: Colors.textSecondary,
+    color: colors.textSecondary,
     marginBottom: 8,
     letterSpacing: 0.8,
     textTransform: "uppercase",
@@ -94,7 +101,7 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: Colors.surfaceElevated,
+    backgroundColor: colors.surfaceElevated,
     borderWidth: 1.5,
     borderRadius: 14,
     overflow: "hidden",
@@ -104,11 +111,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
     fontSize: 16,
-    color: Colors.textPrimary,
+    color: colors.textPrimary,
   },
   inputWithLeft: { paddingLeft: 4 },
   inputWithRight: { paddingRight: 4 },
   icon: { paddingHorizontal: 14, alignItems: "center", justifyContent: "center" },
-  error: { fontSize: 12, color: Colors.danger, marginTop: 6, fontWeight: "500" },
-  hint:  { fontSize: 12, color: Colors.textMuted, marginTop: 6 },
+  error: { fontSize: 12, color: colors.danger, marginTop: 6, fontWeight: "500" },
+  hint:  { fontSize: 12, color: colors.textMuted, marginTop: 6 },
 });

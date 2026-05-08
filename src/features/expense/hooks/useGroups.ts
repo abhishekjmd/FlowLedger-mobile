@@ -1,9 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@clerk/clerk-expo";
 import { apiClient } from "@/api/client";
 import { toast } from "@/lib/toast";
 
 export const useGroups = () => {
   const queryClient = useQueryClient();
+  const { isLoaded, isSignedIn } = useAuth();
+  const enabled = isLoaded && !!isSignedIn;
 
   const listQuery = useQuery({
     queryKey: ["groups"],
@@ -11,6 +14,7 @@ export const useGroups = () => {
       const response = await apiClient.get("/expenses/groups");
       return response.data.data;
     },
+    enabled,
   });
 
   const createMutation = useMutation({
@@ -25,7 +29,10 @@ export const useGroups = () => {
 
   return {
     groups: listQuery.data || [],
-    isLoading: listQuery.isLoading,
+    // isLoading only true on very first load with no cache
+    isLoading: enabled && listQuery.isLoading && !listQuery.data,
+    isError: listQuery.isError,
+    error: listQuery.error,
     refetch: listQuery.refetch,
     isRefetching: listQuery.isRefetching,
     create: createMutation.mutate,
@@ -35,6 +42,8 @@ export const useGroups = () => {
 
 export const useGroupDetails = (id: string) => {
   const queryClient = useQueryClient();
+  const { isLoaded, isSignedIn } = useAuth();
+  const enabled = isLoaded && !!isSignedIn && !!id;
 
   const detailsQuery = useQuery({
     queryKey: ["groups", id],
@@ -42,7 +51,7 @@ export const useGroupDetails = (id: string) => {
       const response = await apiClient.get(`/expenses/groups/${id}`);
       return response.data.data;
     },
-    enabled: !!id,
+    enabled,
   });
 
   const settleMutation = useMutation({
@@ -56,11 +65,28 @@ export const useGroupDetails = (id: string) => {
     },
   });
 
+  const inviteMutation = useMutation({
+    mutationFn: (data: { email: string }) => apiClient.post(`/expenses/groups/${id}/invite`, data),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ["groups", id] });
+      queryClient.invalidateQueries({ queryKey: ["groups"] });
+      return response;
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || "Invite failed");
+    },
+  });
+
   return {
     group: detailsQuery.data,
-    isLoading: detailsQuery.isLoading,
+    // Only true if no cache available
+    isLoading: enabled && detailsQuery.isLoading && !detailsQuery.data,
+    isError: detailsQuery.isError,
+    error: detailsQuery.error,
     refetch: detailsQuery.refetch,
     settle: settleMutation.mutate,
     isSettling: settleMutation.isPending,
+    invite: inviteMutation.mutate,
+    isInviting: inviteMutation.isPending,
   };
 };

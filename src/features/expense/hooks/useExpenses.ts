@@ -1,9 +1,12 @@
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@clerk/clerk-expo";
 import { apiClient } from "@/api/client";
 import { toast } from "@/lib/toast";
 
 export const useExpenses = (filters: any = {}) => {
   const queryClient = useQueryClient();
+  const { isLoaded, isSignedIn } = useAuth();
+  const enabled = isLoaded && !!isSignedIn;
 
   const query = useInfiniteQuery({
     queryKey: ["expenses", filters],
@@ -11,7 +14,7 @@ export const useExpenses = (filters: any = {}) => {
       const response = await apiClient.get("/expenses", {
         params: { ...filters, page: pageParam, limit: 10 },
       });
-      return response.data.data;
+      return response.data.data ?? { expenses: [], pagination: { page: pageParam, totalPages: 1 } };
     },
     getNextPageParam: (lastPage) => {
       if (lastPage.pagination.page < lastPage.pagination.totalPages) {
@@ -20,6 +23,8 @@ export const useExpenses = (filters: any = {}) => {
       return undefined;
     },
     initialPageParam: 1,
+    enabled,
+    retry: 1,
   });
 
   const createMutation = useMutation({
@@ -57,7 +62,10 @@ export const useExpenses = (filters: any = {}) => {
 
   return {
     expenses: query.data?.pages.flatMap((page) => page.expenses) || [],
-    isLoading: query.isLoading,
+    // Only true on initial load with no data
+    isLoading: enabled && query.isLoading && !query.data,
+    isError: query.isError,
+    error: query.error,
     isFetchingNextPage: query.isFetchingNextPage,
     hasNextPage: query.hasNextPage,
     fetchNextPage: query.fetchNextPage,

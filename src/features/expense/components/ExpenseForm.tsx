@@ -7,21 +7,23 @@ import { Ionicons } from "@expo/vector-icons";
 import { Input } from "@/components/Input";
 import { Button } from "@/components/Button";
 import { useMetadata } from "../hooks/useMetadata";
-import { Colors } from "@/constants/theme";
+import { useTheme } from "@/hooks/useTheme";
+import { formatINR } from "@/utils/currency";
 
 const expenseSchema = z.object({
   title: z.string().min(1, "Title is required"),
   amount: z.string().transform((v) => parseFloat(v)).pipe(z.number().positive("Must be a positive number")),
-  category_id: z.number({ required_error: "Select a category" }),
+  category_id: z.number({ error: "Select a category" }),
   group_id: z.number().optional(),
   description: z.string().optional(),
 });
 
-type ExpenseFormValues = z.infer<typeof expenseSchema>;
+type ExpenseFormInput = z.input<typeof expenseSchema>;
+type ExpenseFormValues = z.output<typeof expenseSchema>;
 
 interface ExpenseFormProps {
   initialValues?: any;
-  onSubmit: (data: any) => void;
+  onSubmit: (data: ExpenseFormValues) => void;
   loading?: boolean;
 }
 
@@ -33,8 +35,10 @@ const CATEGORY_ICONS: Record<string, string> = {
 };
 
 export const ExpenseForm: React.FC<ExpenseFormProps> = ({ initialValues, onSubmit, loading }) => {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
   const { categories, groups, isCategoriesLoading, isCategoriesFetching, categoriesError, refetchCategories } = useMetadata();
-  const { control, handleSubmit, reset, setValue, getValues, formState: { errors } } = useForm<ExpenseFormValues>({
+  const { control, handleSubmit, reset, setValue, getValues, formState: { errors } } = useForm<ExpenseFormInput, any, ExpenseFormValues>({
     resolver: zodResolver(expenseSchema),
     defaultValues: {
       title: initialValues?.title ?? "",
@@ -47,10 +51,11 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ initialValues, onSubmi
 
   useEffect(() => {
     if (initialValues) {
+      const nextCategoryId = initialValues.category_id ?? categories[0]?.id;
       reset({
         title: initialValues.title ?? "",
         amount: initialValues.amount?.toString?.() ?? "",
-        category_id: initialValues.category_id,
+        category_id: nextCategoryId,
         group_id: initialValues.group_id,
         description: initialValues.description ?? "",
       });
@@ -102,7 +107,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ initialValues, onSubmi
             onChangeText={onChange}
             value={value}
             error={errors.title?.message}
-            leftIcon={<Ionicons name="create-outline" size={17} color={Colors.textMuted} />}
+            leftIcon={<Ionicons name="create-outline" size={17} color={colors.textMuted} />}
           />
         )}
       />
@@ -140,7 +145,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ initialValues, onSubmi
                     onPress={() => onChange(cat.id)}
                     activeOpacity={0.75}
                   >
-                    <Ionicons name={icon} size={16} color={isActive ? Colors.primary : Colors.textMuted} />
+                    <Ionicons name={icon} size={16} color={isActive ? colors.primary : colors.textMuted} />
                     <Text style={[styles.catChipText, isActive && styles.catChipTextActive]}>{cat.name}</Text>
                   </TouchableOpacity>
                 );
@@ -192,7 +197,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ initialValues, onSubmi
             onBlur={onBlur}
             onChangeText={onChange}
             value={value}
-            leftIcon={<Ionicons name="document-text-outline" size={17} color={Colors.textMuted} />}
+            leftIcon={<Ionicons name="document-text-outline" size={17} color={colors.textMuted} />}
           />
         )}
       />
@@ -210,45 +215,46 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ initialValues, onSubmi
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   scroll: { flex: 1 },
   content: { paddingHorizontal: 24, paddingTop: 16 },
 
   amountWrap: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
   amountInputWrap: { flex: 1 },
-  currencySign: { fontSize: 24, fontWeight: "800", color: Colors.textSecondary, marginRight: 8 },
-  amountInput: { fontSize: 32, fontWeight: "800", color: Colors.textPrimary },
+  currencySign: { fontSize: 24, fontWeight: "800", color: colors.textSecondary, marginRight: 8 },
+  amountInput: { fontSize: 32, fontWeight: "800", color: colors.textPrimary },
 
   section: { marginBottom: 20 },
-  sectionLabel: { fontSize: 11, fontWeight: "700", color: Colors.textMuted, letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 10 },
-  errorText: { fontSize: 12, color: Colors.danger, fontWeight: "500", marginTop: -6, marginBottom: 8 },
+  sectionLabel: { fontSize: 11, fontWeight: "700", color: colors.textMuted, letterSpacing: 0.8, textTransform: "uppercase", marginBottom: 10 },
+  errorText: { fontSize: 12, color: colors.danger, fontWeight: "500", marginTop: -6, marginBottom: 8 },
   categoryErrorWrap: { marginBottom: 10 },
   retryBtn: {
     alignSelf: "flex-start",
-    backgroundColor: Colors.surfaceElevated,
-    borderColor: Colors.surfaceBorder,
+    backgroundColor: colors.surfaceElevated,
+    borderColor: colors.surfaceBorder,
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
-  retryBtnText: { color: Colors.textSecondary, fontWeight: "700", fontSize: 12 },
+  retryBtnText: { color: colors.textSecondary, fontWeight: "700", fontSize: 12 },
   catGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   catChip: {
     flexDirection: "row", alignItems: "center", gap: 6,
     paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10,
-    backgroundColor: Colors.surfaceElevated, borderWidth: 1.5, borderColor: Colors.surfaceBorder,
+    backgroundColor: colors.surfaceElevated, borderWidth: 1.5, borderColor: colors.surfaceBorder,
   },
-  catChipActive: { backgroundColor: Colors.primaryMuted, borderColor: Colors.primary },
-  catChipText: { fontSize: 13, fontWeight: "600", color: Colors.textMuted },
-  catChipTextActive: { color: Colors.primary },
+  catChipActive: { backgroundColor: colors.primary + "15", borderColor: colors.primary },
+  catChipText: { fontSize: 13, fontWeight: "600", color: colors.textMuted },
+  catChipTextActive: { color: colors.primary },
 
   groupRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  groupChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, backgroundColor: Colors.surfaceElevated, borderWidth: 1.5, borderColor: Colors.surfaceBorder },
-  groupChipActive: { backgroundColor: Colors.primaryMuted, borderColor: Colors.primary },
-  groupChipText: { fontSize: 13, fontWeight: "600", color: Colors.textMuted },
-  groupChipTextActive: { color: Colors.primary },
+  groupChip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, backgroundColor: colors.surfaceElevated, borderWidth: 1.5, borderColor: colors.surfaceBorder },
+  groupChipActive: { backgroundColor: colors.primary + "15", borderColor: colors.primary },
+  groupChipText: { fontSize: 13, fontWeight: "600", color: colors.textMuted },
+  groupChipTextActive: { color: colors.primary },
 
   cta: { marginTop: 8 },
 });
+
 
