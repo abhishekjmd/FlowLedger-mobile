@@ -11,7 +11,10 @@ import { z } from "zod";
 import { Ionicons } from "@expo/vector-icons";
 import { Input } from "@/components/Input";
 import { Button } from "@/components/Button";
-import { useAuth } from "@/features/auth/hooks/useAuth";
+import { useSignUp } from '@clerk/clerk-expo'
+import { router } from 'expo-router'
+import Toast from 'react-native-toast-message'
+import { apiClient } from '@/api/client'
 import { Colors } from "@/constants/theme";
 
 const signupSchema = z.object({
@@ -30,12 +33,40 @@ const PERKS = [
 ];
 
 export default function SignupScreen() {
-  const { signup, isSigningUp } = useAuth();
+  const { signUp, setActive, isLoaded } = useSignUp();
+  const [isSigningUp, setIsSigningUp] = useState(false);
   const [showPass, setShowPass] = useState(false);
 
   const { control, handleSubmit, formState: { errors } } = useForm<SignupForm>({
     resolver: zodResolver(signupSchema),
   });
+
+  const onSignup = async (data: SignupForm) => {
+    if (!isLoaded) return
+    setIsSigningUp(true)
+    try {
+      const result = await signUp.create({
+        emailAddress: data.email,
+        password: data.password,
+        firstName: data.name.split(' ')[0],
+        lastName: data.name.split(' ').slice(1).join(' ') || '',
+        username: data.username,
+      })
+      if (result.status === 'complete') {
+        await setActive({ session: result.createdSessionId })
+        await apiClient.post('/auth/sync')
+        router.replace('/(tabs)')
+      }
+    } catch (err: any) {
+      Toast.show({
+        type: 'error',
+        text1: 'Signup failed',
+        text2: err.errors?.[0]?.message || 'Something went wrong'
+      })
+    } finally {
+      setIsSigningUp(false)
+    }
+  }
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -111,7 +142,7 @@ export default function SignupScreen() {
               )}
             />
 
-            <Button title="Create Free Account" onPress={handleSubmit((d) => signup(d))} loading={isSigningUp} style={styles.cta} />
+            <Button title="Create Free Account" onPress={handleSubmit(onSignup)} loading={isSigningUp} style={styles.cta} />
 
             <Text style={styles.terms}>
               By creating an account, you agree to our{" "}
