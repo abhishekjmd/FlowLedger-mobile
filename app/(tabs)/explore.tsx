@@ -1,112 +1,181 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import React, { useState, useRef, useMemo } from "react";
+import {
+  View, Text, StyleSheet, FlatList, ActivityIndicator,
+  TouchableOpacity, RefreshControl, TextInput, StatusBar,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import BottomSheet, { BottomSheetView, BottomSheetBackdrop } from "@gorhom/bottom-sheet";
+import { useExpenses } from "@/features/expense/hooks/useExpenses";
+import { ExpenseCard } from "@/features/expense/components/ExpenseCard";
+import { ExpenseForm } from "@/features/expense/components/ExpenseForm";
+import { Colors } from "@/constants/theme";
+import { formatINR } from "@/utils/currency";
 
-import { Collapsible } from '@/components/ui/collapsible';
-import { ExternalLink } from '@/components/external-link';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Fonts } from '@/constants/theme';
+export default function ExpensesScreen() {
+  const [search, setSearch] = useState("");
+  const [selectedExpense, setSelectedExpense] = useState<any>(null);
+  const bottomSheetRef = useRef<BottomSheet>(null);
+  const snapPoints = useMemo(() => ["65%", "92%"], []);
 
-export default function TabTwoScreen() {
+  const {
+    expenses, isLoading, hasNextPage, fetchNextPage,
+    isFetchingNextPage, refetch, isRefetching, create, update, delete: remove,
+  } = useExpenses({ title: search });
+
+  const openCreate = () => { setSelectedExpense(null); bottomSheetRef.current?.expand(); };
+  const openEdit   = (exp: any) => { setSelectedExpense(exp); bottomSheetRef.current?.expand(); };
+  const onSubmit   = (data: any) => {
+    selectedExpense ? update({ id: selectedExpense.id, data }) : create(data);
+    bottomSheetRef.current?.close();
+  };
+
+  const totalThisMonth = expenses?.reduce((s: number, e: any) => s + Number(e.amount), 0) ?? 0;
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
-      headerImage={
-        <IconSymbol
-          size={310}
-          color="#808080"
-          name="chevron.left.forwardslash.chevron.right"
-          style={styles.headerImage}
+    <SafeAreaView style={styles.safe} edges={["top"]}>
+      <StatusBar barStyle="light-content" />
+
+      {/* Header */}
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.pageLabel}>Activity</Text>
+          <Text style={styles.pageTitle}>Transactions</Text>
+        </View>
+        <TouchableOpacity style={styles.addBtn} onPress={openCreate}>
+          <Ionicons name="add" size={22} color="#fff" />
+        </TouchableOpacity>
+      </View>
+
+      {/* Summary pill */}
+      <View style={styles.summaryRow}>
+        <View style={styles.summaryCard}>
+          <Ionicons name="trending-down" size={14} color={Colors.danger} />
+          <Text style={styles.summaryText}>{formatINR(totalThisMonth)} spent</Text>
+        </View>
+        <View style={styles.summaryCard}>
+          <Ionicons name="list-outline" size={14} color={Colors.textMuted} />
+          <Text style={styles.summaryText}>{expenses?.length ?? 0} transactions</Text>
+        </View>
+      </View>
+
+      {/* Search bar */}
+      <View style={styles.searchWrap}>
+        <Ionicons name="search" size={17} color={Colors.textMuted} style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search transactions..."
+          placeholderTextColor={Colors.textMuted}
+          value={search}
+          onChangeText={setSearch}
         />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText
-          type="title"
-          style={{
-            fontFamily: Fonts.rounded,
-          }}>
-          Explore
-        </ThemedText>
-      </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image
-          source={require('@/assets/images/react-logo.png')}
-          style={{ width: 100, height: 100, alignSelf: 'center' }}
-        />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful{' '}
-          <ThemedText type="defaultSemiBold" style={{ fontFamily: Fonts.mono }}>
-            react-native-reanimated
-          </ThemedText>{' '}
-          library to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
-            </ThemedText>
-          ),
-        })}
-      </Collapsible>
-    </ParallaxScrollView>
+        {search.length > 0 && (
+          <TouchableOpacity onPress={() => setSearch("")}>
+            <Ionicons name="close-circle" size={17} color={Colors.textMuted} />
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* List */}
+      <FlatList
+        data={expenses}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => (
+          <ExpenseCard expense={item} onPress={() => openEdit(item)} onDelete={() => remove(item.id)} />
+        )}
+        contentContainerStyle={styles.list}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={Colors.primary} />}
+        onEndReached={() => hasNextPage && fetchNextPage()}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={
+          isFetchingNextPage
+            ? <ActivityIndicator color={Colors.primary} style={{ paddingVertical: 20 }} />
+            : null
+        }
+        ListEmptyComponent={
+          !isLoading ? (
+            <View style={styles.empty}>
+              <View style={styles.emptyIcon}>
+                <Ionicons name="receipt-outline" size={40} color={Colors.primary} />
+              </View>
+              <Text style={styles.emptyTitle}>No transactions yet</Text>
+              <Text style={styles.emptySub}>Tap + to log your first expense</Text>
+            </View>
+          ) : (
+            <ActivityIndicator color={Colors.primary} style={{ marginTop: 60 }} />
+          )
+        }
+      />
+
+      {/* Floating action button */}
+      <TouchableOpacity style={styles.fab} onPress={openCreate} activeOpacity={0.85}>
+        <Ionicons name="add" size={28} color="#fff" />
+      </TouchableOpacity>
+
+      {/* Bottom Sheet */}
+      <BottomSheet
+        ref={bottomSheetRef}
+        index={-1}
+        snapPoints={snapPoints}
+        enablePanDownToClose
+        backgroundStyle={styles.sheetBg}
+        handleIndicatorStyle={styles.sheetHandle}
+        backdropComponent={(props) => (
+          <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.6} />
+        )}
+      >
+        <BottomSheetView style={styles.sheetContent}>
+          <View style={styles.sheetHeader}>
+            <Text style={styles.sheetTitle}>
+              {selectedExpense ? "Edit Transaction" : "New Transaction"}
+            </Text>
+            <TouchableOpacity onPress={() => bottomSheetRef.current?.close()} style={styles.sheetClose}>
+              <Ionicons name="close" size={20} color={Colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
+          <ExpenseForm initialValues={selectedExpense} onSubmit={onSubmit} loading={isLoading} />
+        </BottomSheetView>
+      </BottomSheet>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  headerImage: {
-    color: '#808080',
-    bottom: -90,
-    left: -35,
-    position: 'absolute',
+  safe:     { flex: 1, backgroundColor: Colors.bg },
+  header:   { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", paddingHorizontal: 20, paddingTop: 8, marginBottom: 16 },
+  pageLabel: { fontSize: 11, color: Colors.textMuted, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", marginBottom: 4 },
+  pageTitle: { fontSize: 26, fontWeight: "800", color: Colors.textPrimary, letterSpacing: -0.5 },
+  addBtn:    {
+    width: 42, height: 42, borderRadius: 12, backgroundColor: Colors.primary,
+    alignItems: "center", justifyContent: "center",
+    shadowColor: Colors.primary, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 8,
   },
-  titleContainer: {
-    flexDirection: 'row',
-    gap: 8,
+
+  summaryRow:  { flexDirection: "row", gap: 10, paddingHorizontal: 20, marginBottom: 14 },
+  summaryCard: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: Colors.surface, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderColor: Colors.surfaceBorder },
+  summaryText: { fontSize: 13, fontWeight: "600", color: Colors.textSecondary },
+
+  searchWrap:  { flexDirection: "row", alignItems: "center", backgroundColor: Colors.surface, borderRadius: 14, marginHorizontal: 20, marginBottom: 16, paddingHorizontal: 14, paddingVertical: 2, borderWidth: 1, borderColor: Colors.surfaceBorder },
+  searchIcon:  { marginRight: 8 },
+  searchInput: { flex: 1, height: 46, fontSize: 15, color: Colors.textPrimary },
+
+  list: { paddingHorizontal: 20, paddingBottom: 120 },
+
+  empty:      { alignItems: "center", paddingTop: 60, gap: 12 },
+  emptyIcon:  { width: 80, height: 80, borderRadius: 24, backgroundColor: Colors.primaryMuted, alignItems: "center", justifyContent: "center", marginBottom: 8 },
+  emptyTitle: { fontSize: 18, fontWeight: "700", color: Colors.textPrimary },
+  emptySub:   { fontSize: 14, color: Colors.textMuted },
+
+  fab: {
+    position: "absolute", bottom: 28, right: 20, width: 60, height: 60,
+    borderRadius: 18, backgroundColor: Colors.primary, alignItems: "center", justifyContent: "center",
+    shadowColor: Colors.primary, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.5, shadowRadius: 20, elevation: 12,
   },
+
+  sheetBg:      { backgroundColor: Colors.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28 },
+  sheetHandle:  { backgroundColor: Colors.surfaceBorder, width: 40 },
+  sheetContent: { flex: 1 },
+  sheetHeader:  { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 24, paddingTop: 8, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: Colors.surfaceBorder },
+  sheetTitle:   { fontSize: 18, fontWeight: "800", color: Colors.textPrimary },
+  sheetClose:   { width: 32, height: 32, borderRadius: 10, backgroundColor: Colors.surface, alignItems: "center", justifyContent: "center" },
 });
