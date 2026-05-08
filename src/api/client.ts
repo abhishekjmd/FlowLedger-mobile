@@ -1,10 +1,14 @@
 import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 const BASE_URL = "https://flowledger-server.onrender.com/v1";
+let authToken: string | null = null;
+
+export const setAuthToken = (token: string | null) => {
+  authToken = token;
+};
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,
-  withCredentials: true,
+  withCredentials: false,
 });
 
 const logApiError = (error: any) => {
@@ -32,53 +36,13 @@ const logApiError = (error: any) => {
   }
 };
 
-apiClient.interceptors.request.use(async (config) => {
-  const token = await AsyncStorage.getItem("accessToken");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+apiClient.interceptors.request.use((config) => {
+  if (authToken) {
+    config.headers.Authorization = `Bearer ${authToken}`;
   }
   return config;
 });
-
-apiClient.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    logApiError(error);
-    const originalRequest = error.config;
-
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-
-      try {
-        const refreshToken = await AsyncStorage.getItem("refreshToken");
-        const response = await axios.post(
-          `${BASE_URL}/auth/refresh`,
-          refreshToken ? { refreshToken } : {},
-          { withCredentials: true },
-        );
-        const { accessToken, refreshToken: nextRefreshToken } = response.data.data;
-
-        await AsyncStorage.setItem("accessToken", accessToken);
-        if (nextRefreshToken) {
-          await AsyncStorage.setItem("refreshToken", nextRefreshToken);
-        }
-        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-
-        return apiClient(originalRequest);
-      } catch (refreshError) {
-        logApiError(refreshError);
-        const refreshStatus = axios.isAxiosError(refreshError) ? refreshError.response?.status : undefined;
-
-        // Only clear tokens when refresh token is definitely invalid.
-        // Do not log the user out for transient network/server errors.
-        if (refreshStatus === 401 || refreshStatus === 403) {
-          await AsyncStorage.multiRemove(["accessToken", "refreshToken"]);
-        }
-
-        return Promise.reject(refreshError);
-      }
-    }
-
-    return Promise.reject(error);
-  }
-);
+apiClient.interceptors.response.use((response) => response, (error) => {
+  logApiError(error);
+  return Promise.reject(error);
+});

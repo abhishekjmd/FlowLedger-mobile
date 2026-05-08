@@ -10,14 +10,16 @@ import {
   StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Link } from "expo-router";
+import { Link, router } from "expo-router";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Ionicons } from "@expo/vector-icons";
+import { useSignIn } from "@clerk/clerk-expo";
+import Toast from "react-native-toast-message";
 import { Input } from "@/components/Input";
 import { Button } from "@/components/Button";
-import { useAuth } from "@/features/auth/hooks/useAuth";
+import { apiClient } from "@/api/client";
 import { Colors } from "@/constants/theme";
 
 const loginSchema = z.object({
@@ -28,7 +30,8 @@ const loginSchema = z.object({
 type LoginForm = z.infer<typeof loginSchema>;
 
 export default function LoginScreen() {
-  const { login, isLoggingIn } = useAuth();
+  const { signIn, setActive, isLoaded } = useSignIn();
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [showPass, setShowPass] = useState(false);
 
   const {
@@ -36,6 +39,30 @@ export default function LoginScreen() {
     handleSubmit,
     formState: { errors },
   } = useForm<LoginForm>({ resolver: zodResolver(loginSchema) });
+
+  const onLogin = async (data: LoginForm) => {
+    if (!isLoaded) return;
+    setIsLoggingIn(true);
+    try {
+      const result = await signIn.create({
+        identifier: data.email_username,
+        password: data.password,
+      });
+      if (result.status === "complete") {
+        await setActive({ session: result.createdSessionId });
+        await apiClient.post("/auth/sync");
+        router.replace("/(tabs)");
+      }
+    } catch (err: any) {
+      Toast.show({
+        type: "error",
+        text1: "Login failed",
+        text2: err.errors?.[0]?.message || "Invalid credentials",
+      });
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -115,7 +142,7 @@ export default function LoginScreen() {
 
             <Button
               title="Sign In"
-              onPress={handleSubmit((d) => login(d))}
+              onPress={handleSubmit(onLogin)}
               loading={isLoggingIn}
               style={styles.cta}
             />
