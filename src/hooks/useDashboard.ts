@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@clerk/clerk-expo";
 import { apiClient } from "@/api/client";
+import { normalizeInsights } from "@/utils/insights";
 
 export const useDashboard = () => {
   const { isLoaded, isSignedIn } = useAuth();
@@ -60,7 +61,7 @@ export const useDashboard = () => {
     summary: summaryQuery.data ?? { currentMonth: 0, lastMonth: 0, difference: 0 },
     categories: categoriesQuery.data ?? [],
     trends: trendsQuery.data ?? [],
-    insights: insightsQuery.data ?? [],
+    insights: normalizeInsights(insightsQuery.data ?? []),
     recentExpenses: expensesQuery.data ?? [],
     isLoading: 
       enabled && (

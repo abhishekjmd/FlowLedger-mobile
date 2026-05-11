@@ -88,7 +88,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ initialValues, onSubmi
         keyboardShouldPersistTaps="handled"
       >
       <View style={styles.amountWrap}>
-        <Text style={styles.currencySign}>INR {"\u20B9"}</Text>
+        <Text style={styles.currencySign}>{"\u20B9"}</Text>
         <View style={styles.amountInputWrap}>
           <Controller
             control={control}

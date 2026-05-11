@@ -225,7 +225,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   seeAll:        { fontSize: 13, color: colors.primary, fontWeight: "600" },
 
   // Insights
-  insightsList: { gap: 10 },
+  insightsList: { gap: 10, marginTop: 12 },
   insightCard: {
     flexDirection: "row", alignItems: "flex-start", gap: 12,
     backgroundColor: colors.surface, borderRadius: 16, padding: 16,

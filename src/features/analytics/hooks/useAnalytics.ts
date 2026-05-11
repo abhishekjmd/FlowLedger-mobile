@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@clerk/clerk-expo";
 import { apiClient } from "@/api/client";
+import { normalizeInsights } from "@/utils/insights";
 
 export const useAnalytics = () => {
   const { isLoaded, isSignedIn } = useAuth();
@@ -50,7 +51,7 @@ export const useAnalytics = () => {
     summary: summaryQuery.data ?? { currentMonth: 0, lastMonth: 0, difference: 0 },
     breakdown: breakdownQuery.data || [],
     trends: trendsQuery.data || [],
-    insights: insightsQuery.data || [],
+    insights: normalizeInsights(insightsQuery.data || []),
     isLoading: 
       enabled && (
         (summaryQuery.isLoading && !summaryQuery.data) || 
