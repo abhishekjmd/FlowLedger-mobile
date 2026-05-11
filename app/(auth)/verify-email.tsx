@@ -1,7 +1,8 @@
 import React, { useRef, useState } from "react";
 import {
   View, Text, StyleSheet, TouchableOpacity,
-  StatusBar, TextInput,
+  StatusBar, TextInput, KeyboardAvoidingView,
+  Platform, ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
@@ -109,7 +110,15 @@ export default function VerifyEmailScreen() {
     <SafeAreaView style={styles.safe}>
       <StatusBar barStyle={theme === "dark" ? "light-content" : "dark-content"} />
 
-      <View style={styles.container}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.flex}
+      >
+        <ScrollView
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
         {/* Back */}
         <TouchableOpacity style={styles.back} onPress={() => router.back()}>
           <Ionicons name="arrow-back" size={22} color={colors.textPrimary} />
@@ -163,14 +172,16 @@ export default function VerifyEmailScreen() {
             </Text>
           </TouchableOpacity>
         </View>
-      </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const getStyles = (colors: any) => StyleSheet.create({
   safe:      { flex: 1, backgroundColor: colors.bg },
-  container: { flex: 1, paddingHorizontal: 28, paddingTop: 16 },
+  flex:      { flex: 1 },
+  container: { flexGrow: 1, paddingHorizontal: 28, paddingTop: 16, paddingBottom: 32 },
   back:      { marginBottom: 40 },
 
   iconWrap: {

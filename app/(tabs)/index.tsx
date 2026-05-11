@@ -1,7 +1,7 @@
 import React from "react";
 import {
   View, Text, StyleSheet, ScrollView, RefreshControl,
-  TouchableOpacity, StatusBar, Dimensions,
+  TouchableOpacity, StatusBar,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
@@ -12,15 +12,6 @@ import { useUser } from "@clerk/clerk-expo";
 import { ApiErrorState } from "@/components/ApiState";
 import { useTheme } from "@/hooks/useTheme";
 import { formatINR } from "@/utils/currency";
-
-const { width } = Dimensions.get("window");
-
-const QUICK_ACTIONS = [
-  { icon: "add-circle",      label: "Add",      color: "primary",  route: "/(tabs)/explore" },
-  { icon: "people",          label: "Groups",   color: "#8B5CF6",  route: "/(tabs)/groups" },
-  { icon: "bar-chart",       label: "Analytics",color: "accent",   route: "/(tabs)/analytics" },
-  { icon: "repeat",          label: "Recurring",color: "warning",  route: "/(tabs)/explore" },
-];
 
 const CATEGORY_ICONS: Record<string, string> = {
   Food: "fast-food-outline", Transport: "car-outline",
@@ -111,16 +102,16 @@ export default function DashboardScreen() {
         {insights && insights.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Flow Intelligence</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.insightsScroll}>
-              {insights.map((insight: string, i: number) => (
+            <View style={styles.insightsList}>
+              {insights.slice(0, 3).map((insight: string, i: number) => (
                 <View key={i} style={styles.insightCard}>
                   <View style={styles.insightIcon}>
                     <Ionicons name="sparkles" size={16} color={colors.warning} />
                   </View>
-                  <Text style={styles.insightText} numberOfLines={3}>{insight}</Text>
+                  <Text style={styles.insightText}>{insight}</Text>
                 </View>
               ))}
-            </ScrollView>
+            </View>
           </View>
         )}
 
@@ -234,16 +225,17 @@ const getStyles = (colors: any) => StyleSheet.create({
   seeAll:        { fontSize: 13, color: colors.primary, fontWeight: "600" },
 
   // Insights
-  insightsScroll: { marginHorizontal: -20, paddingHorizontal: 20 },
+  insightsList: { gap: 10 },
   insightCard: {
-    width: width * 0.72, backgroundColor: colors.surface, borderRadius: 16, padding: 16,
-    marginRight: 12, borderWidth: 1, borderColor: colors.surfaceBorder,
+    flexDirection: "row", alignItems: "flex-start", gap: 12,
+    backgroundColor: colors.surface, borderRadius: 16, padding: 16,
+    borderWidth: 1, borderColor: colors.surfaceBorder,
   },
   insightIcon: {
     width: 32, height: 32, borderRadius: 10, backgroundColor: colors.warning + "18",
-    alignItems: "center", justifyContent: "center", marginBottom: 10,
+    alignItems: "center", justifyContent: "center",
   },
-  insightText: { fontSize: 14, color: colors.textSecondary, lineHeight: 20 },
+  insightText: { flex: 1, fontSize: 14, color: colors.textSecondary, lineHeight: 20 },
 
   // Category
   catRow:    { flexDirection: "row", alignItems: "center", marginBottom: 14 },

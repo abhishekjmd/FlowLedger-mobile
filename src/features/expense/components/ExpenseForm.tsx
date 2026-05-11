@@ -1,5 +1,13 @@
 import React, { useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
+import {
+  KeyboardAvoidingView,
+  Platform,
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+} from "react-native";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -8,7 +16,6 @@ import { Input } from "@/components/Input";
 import { Button } from "@/components/Button";
 import { useMetadata } from "../hooks/useMetadata";
 import { useTheme } from "@/hooks/useTheme";
-import { formatINR } from "@/utils/currency";
 
 const expenseSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -69,12 +76,17 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ initialValues, onSubmi
   }, [initialValues, categories, getValues, reset, setValue]);
 
   return (
-    <ScrollView
-      style={styles.scroll}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-      keyboardShouldPersistTaps="handled"
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 16 : 0}
+      style={styles.keyboardAvoider}
     >
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
       <View style={styles.amountWrap}>
         <Text style={styles.currencySign}>INR {"\u20B9"}</Text>
         <View style={styles.amountInputWrap}>
@@ -210,14 +222,16 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ initialValues, onSubmi
         style={styles.cta}
       />
 
-      <View style={{ height: 32 }} />
-    </ScrollView>
+        <View style={styles.bottomSpacer} />
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
 const getStyles = (colors: any) => StyleSheet.create({
+  keyboardAvoider: { flex: 1 },
   scroll: { flex: 1 },
-  content: { paddingHorizontal: 24, paddingTop: 16 },
+  content: { paddingHorizontal: 24, paddingTop: 16, paddingBottom: 120 },
 
   amountWrap: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
   amountInputWrap: { flex: 1 },
@@ -255,6 +269,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   groupChipTextActive: { color: colors.primary },
 
   cta: { marginTop: 8 },
+  bottomSpacer: { height: 8 },
 });
 
 

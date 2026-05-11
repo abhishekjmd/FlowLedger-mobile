@@ -1,11 +1,12 @@
-import React, { useState, useRef, useMemo } from "react";
+import React, { useState, useRef, useMemo, useCallback, useEffect } from "react";
 import {
   View, Text, StyleSheet, FlatList, ActivityIndicator,
-  TouchableOpacity, RefreshControl, TextInput, StatusBar,
+  TouchableOpacity, RefreshControl, TextInput, StatusBar, BackHandler,
 } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams, useNavigation } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop } from "@gorhom/bottom-sheet";
 import { useExpenses } from "@/features/expense/hooks/useExpenses";
@@ -17,10 +18,12 @@ import { formatINR } from "@/utils/currency";
 
 export default function ExpensesScreen() {
   const { group_id } = useLocalSearchParams<{ group_id?: string }>();
+  const navigation = useNavigation();
   const [search, setSearch] = useState("");
   const [selectedExpense, setSelectedExpense] = useState<any>(null);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
   const bottomSheetRef = useRef<BottomSheet>(null);
-  const snapPoints = useMemo(() => ["65%", "92%"], []);
+  const snapPoints = useMemo(() => ["82%", "96%"], []);
   const tabBarHeight = useBottomTabBarHeight();
   const { colors, theme } = useTheme();
   const styles = getStyles(colors);
@@ -38,6 +41,36 @@ export default function ExpensesScreen() {
     expenses, isLoading, hasNextPage, fetchNextPage,
     isFetchingNextPage, isError, error, refetch, isRefetching, create, update, delete: remove,
   } = useExpenses(filters);
+
+  useEffect(() => {
+    navigation.setOptions({
+      tabBarStyle: isSheetOpen ? { display: "none" } : undefined,
+    });
+
+    return () => {
+      navigation.setOptions({ tabBarStyle: undefined });
+    };
+  }, [isSheetOpen, navigation]);
+
+  const handleSheetChange = useCallback((index: number) => {
+    setIsSheetOpen(index >= 0);
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!defaultGroupId) return undefined;
+
+      const backSubscription = BackHandler.addEventListener("hardwareBackPress", () => {
+        router.replace(`/(groups)/${defaultGroupId}` as any);
+        return true;
+      });
+
+      return () => {
+        backSubscription.remove();
+        router.setParams({ group_id: undefined });
+      };
+    }, [defaultGroupId])
+  );
 
   const openCreate = () => { setSelectedExpense(null); bottomSheetRef.current?.expand(); };
   const openEdit   = (exp: any) => { setSelectedExpense(exp); bottomSheetRef.current?.expand(); };
@@ -140,10 +173,15 @@ export default function ExpensesScreen() {
         index={-1}
         snapPoints={snapPoints}
         enablePanDownToClose
+        onChange={handleSheetChange}
+        keyboardBehavior="interactive"
+        keyboardBlurBehavior="restore"
+        android_keyboardInputMode="adjustResize"
+        style={styles.sheet}
         backgroundStyle={styles.sheetBg}
         handleIndicatorStyle={styles.sheetHandle}
         backdropComponent={(props) => (
-          <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.6} />
+          <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.6} pressBehavior="close" />
         )}
       >
         <BottomSheetView style={styles.sheetContent}>
@@ -198,6 +236,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     shadowColor: colors.primary, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.5, shadowRadius: 20, elevation: 12,
   },
 
+  sheet:        { zIndex: 20, elevation: 20 },
   sheetBg:      { backgroundColor: colors.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28 },
   sheetHandle:  { backgroundColor: colors.surfaceBorder, width: 40 },
   sheetContent: { flex: 1 },

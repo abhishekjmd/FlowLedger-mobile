@@ -1,11 +1,12 @@
-import React, { useRef, useMemo, useState } from "react";
+import React, { useRef, useMemo, useState, useCallback, useEffect } from "react";
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   RefreshControl, StatusBar, ActivityIndicator,
+  KeyboardAvoidingView, Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
-import { router } from "expo-router";
+import { router, useNavigation } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import BottomSheet, { BottomSheetView, BottomSheetBackdrop } from "@gorhom/bottom-sheet";
 import { useGroups } from "@/features/expense/hooks/useGroups";
@@ -18,10 +19,12 @@ import { useTheme } from "@/hooks/useTheme";
 
 export default function GroupsScreen() {
   const { groups, isLoading, isError, error, isRefetching, refetch, create, isCreating } = useGroups();
+  const navigation = useNavigation();
   const [groupName, setGroupName] = useState("");
   const [groupDesc, setGroupDesc] = useState("");
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
   const bottomSheetRef = useRef<BottomSheet>(null);
-  const snapPoints = useMemo(() => ["55%"], []);
+  const snapPoints = useMemo(() => ["62%"], []);
   const tabBarHeight = useBottomTabBarHeight();
   const { colors, theme } = useTheme();
   const styles = getStyles(colors);
@@ -34,6 +37,20 @@ export default function GroupsScreen() {
     setGroupName(""); setGroupDesc("");
     bottomSheetRef.current?.close();
   };
+
+  useEffect(() => {
+    navigation.setOptions({
+      tabBarStyle: isSheetOpen ? { display: "none" } : undefined,
+    });
+
+    return () => {
+      navigation.setOptions({ tabBarStyle: undefined });
+    };
+  }, [isSheetOpen, navigation]);
+
+  const handleSheetChange = useCallback((index: number) => {
+    setIsSheetOpen(index >= 0);
+  }, []);
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -110,10 +127,15 @@ export default function GroupsScreen() {
         index={-1}
         snapPoints={snapPoints}
         enablePanDownToClose
+        onChange={handleSheetChange}
+        keyboardBehavior="interactive"
+        keyboardBlurBehavior="restore"
+        android_keyboardInputMode="adjustResize"
+        style={styles.sheet}
         backgroundStyle={styles.sheetBg}
         handleIndicatorStyle={styles.sheetHandle}
         backdropComponent={(props) => (
-          <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.6} />
+          <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.6} pressBehavior="close" />
         )}
       >
         <BottomSheetView style={styles.sheetContent}>
@@ -123,7 +145,11 @@ export default function GroupsScreen() {
               <Ionicons name="close" size={20} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
-          <View style={styles.sheetBody}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            keyboardVerticalOffset={Platform.OS === "ios" ? tabBarHeight : 0}
+            style={styles.sheetBody}
+          >
             <Input
               label="Group Name"
               placeholder="e.g. Barcelona Trip 2025"
@@ -143,7 +169,7 @@ export default function GroupsScreen() {
               onPress={handleCreate}
               loading={isCreating}
             />
-          </View>
+          </KeyboardAvoidingView>
         </BottomSheetView>
       </BottomSheet>
     </SafeAreaView>
@@ -178,7 +204,8 @@ const getStyles = (colors: any) => StyleSheet.create({
   emptyTitle: { fontSize: 18, fontWeight: "700", color: colors.textPrimary },
   emptySub:   { fontSize: 14, color: colors.textMuted, textAlign: "center", paddingHorizontal: 40 },
 
-  sheetBg:      { backgroundColor: colors.bg },
+  sheet:        { zIndex: 20, elevation: 20 },
+  sheetBg:      { backgroundColor: colors.bg, borderTopLeftRadius: 28, borderTopRightRadius: 28 },
   sheetHandle:  { backgroundColor: colors.surfaceBorder, width: 40 },
   sheetContent: { flex: 1 },
   sheetHeader:  { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 24, paddingTop: 8, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: colors.surfaceBorder },
