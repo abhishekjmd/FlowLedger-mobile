@@ -2,6 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@clerk/clerk-expo";
 import { apiClient } from "@/api/client";
 
+const EMPTY_LIST: any[] = [];
+
 export const useMetadata = () => {
   const { isLoaded, isSignedIn } = useAuth();
   const enabled = isLoaded && !!isSignedIn;
@@ -28,8 +30,8 @@ export const useMetadata = () => {
   });
 
   return {
-    categories: categoriesQuery.data || [],
-    groups: groupsQuery.data || [],
+    categories: categoriesQuery.data || EMPTY_LIST,
+    groups: groupsQuery.data || EMPTY_LIST,
     isCategoriesLoading: categoriesQuery.isLoading,
     isCategoriesFetching: categoriesQuery.isFetching,
     categoriesError: categoriesQuery.error,

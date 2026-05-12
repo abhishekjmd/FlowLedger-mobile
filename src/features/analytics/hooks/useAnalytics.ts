@@ -8,7 +8,7 @@ export const useAnalytics = () => {
   const enabled = isLoaded && !!isSignedIn;
 
   const summaryQuery = useQuery({
-    queryKey: ["analytics", "summary"],
+    queryKey: ["analytics", "monthly"],
     queryFn: async () => {
       const response = await apiClient.get("/analytics/monthly");
       return response.data.data;
@@ -18,7 +18,7 @@ export const useAnalytics = () => {
   });
 
   const breakdownQuery = useQuery({
-    queryKey: ["analytics", "breakdown"],
+    queryKey: ["analytics", "categories"],
     queryFn: async () => {
       const response = await apiClient.get("/analytics/categories");
       return response.data.data;
