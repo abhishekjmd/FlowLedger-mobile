@@ -1,10 +1,6 @@
-# FlowLedger Mobile - Frontend
+# FlowLedger Mobile — Frontend
 
-Mobile frontend for FlowLedger, an expense tracking app for logging personal transactions, reviewing spending trends, and splitting shared costs with groups.
-
-This repository contains the React Native/Expo frontend. The API lives in the [FlowLedger backend repo](https://github.com/abhishekjmd/FlowLedger-server).
-
-FlowLedger helps individuals track personal spending and split shared costs with groups without the complexity of full finance apps.
+> *FlowLedger helps individuals track personal spending and split shared costs with groups — without the complexity of full finance apps.*
 
 ![Expo](https://img.shields.io/badge/Expo-54-000020?logo=expo&logoColor=white)
 ![React Native](https://img.shields.io/badge/React%20Native-0.81-61DAFB?logo=react&logoColor=111111)
@@ -14,19 +10,23 @@ FlowLedger helps individuals track personal spending and split shared costs with
 ![NativeWind](https://img.shields.io/badge/NativeWind-4-38BDF8)
 ![TanStack Query](https://img.shields.io/badge/TanStack%20Query-5-FF4154?logo=reactquery&logoColor=white)
 
+This repository contains the React Native/Expo frontend. The API lives in the [FlowLedger backend repo](https://github.com/abhishekjmd/FlowLedger-server).
+
+---
+
 ## Demo
 
-Add a short screen recording or screenshots here.
+![FlowLedger full walkthrough](docs/screenshots/flowLedger_screen_recording.mp4)
 
-<!-- Recommended screenshot path: docs/screenshots/dashboard.png -->
+| Login | Sign Up | Home |
+|:---:|:---:|:---:|
+| ![Login](docs/screenshots/login_screen.jpeg) | ![Sign Up](docs/screenshots/signup_screen.jpeg) | ![Home](docs/screenshots/home_screen.jpeg) |
 
-Suggested flows to record:
+| Transactions | Stats | Groups | Profile |
+|:---:|:---:|:---:|:---:|
+| ![Transactions](docs/screenshots/transaction_screen.jpeg) | ![Stats](docs/screenshots/stats_screen.jpeg) | ![Groups](docs/screenshots/group_screen.jpeg) | ![Profile](docs/screenshots/profile.jpeg) |
 
-- Sign up, verify email, and sign in with Clerk.
-- Add, edit, search, and delete a transaction.
-- Create a group, add a shared expense, invite a member, and settle a balance.
-- Review dashboard summaries, spending categories, trends, and financial insights.
-- Toggle light/dark mode from the profile screen.
+---
 
 ## Features
 
@@ -36,6 +36,8 @@ Suggested flows to record:
 - See who owes whom and record settlements inside group balances.
 - Review monthly spending, category breakdowns, trends, and generated insights.
 - Switch between light and dark themes with the preference saved on-device.
+
+---
 
 ## Tech Stack
 
@@ -53,6 +55,8 @@ Suggested flows to record:
 | Gorhom Bottom Sheet | Mobile form surfaces | Makes create/edit flows feel native without leaving the current screen. |
 | Expo SecureStore | Local secure storage | Persists auth tokens and theme preference in device-backed storage. |
 
+---
+
 ## Folder Structure
 
 ```text
@@ -62,6 +66,7 @@ flowledger-mobile/
 |   |-- (groups)/           # Group details and invite flows
 |   `-- (tabs)/             # Dashboard, transactions, groups, analytics, profile
 |-- assets/                 # App icons, splash images, and static assets
+|-- docs/                   # Screenshots and screen recordings
 |-- src/
 |   |-- api/                # Axios client and API error helpers
 |   |-- components/         # Shared app UI components
@@ -78,11 +83,15 @@ flowledger-mobile/
 `-- package.json            # Scripts and dependencies
 ```
 
-The app uses Expo Router for screen-level navigation and feature folders for expense and analytics logic.
+Routes live under `app/` via Expo Router; all business logic and UI components are colocated under `src/features/`.
+
+---
 
 ## State Management
 
 Server state is handled with TanStack Query. Expense, group, dashboard, and analytics hooks define their own query keys, loading behavior, pagination, refetching, and mutation invalidation. Local UI state stays inside screens for search text, selected transactions, active tabs, bottom sheets, and form visibility. Theme is app-wide state managed through a small React context and persisted with Expo SecureStore because it needs to survive app restarts without a heavier global store.
+
+---
 
 ## Getting Started
 
@@ -120,7 +129,9 @@ Run linting:
 npm run lint
 ```
 
-The app currently points to the hosted API at `https://flowledger-server.onrender.com/v1` in `src/api/client.ts`. To test against a local backend, update `BASE_URL` in that file and make sure the [FlowLedger server](https://github.com/abhishekjmd/FlowLedger-server) is running first.
+The app currently points to the hosted API at `https://flowledger-server.onrender.com/v1` in `src/api/client.ts`. To test against a local backend, update `BASE_URL` in that file — make sure the [FlowLedger server](https://github.com/abhishekjmd/FlowLedger-server) is running first.
+
+---
 
 ## Challenges & Learnings
 
@@ -128,8 +139,12 @@ The app currently points to the hosted API at `https://flowledger-server.onrende
 - Transaction browsing needed to stay responsive on mobile, so the app uses paginated TanStack Query data, pull-to-refresh, cached loading states, and targeted invalidation after mutations.
 - Group splitting creates several UI edge cases, including empty groups, invite links, member balances, settlements, and adding an expense with a preselected group.
 
+---
+
 ## Roadmap
 
-- Add recurring expense tracking for subscriptions and repeat payments.
-- Add push notifications for group settlement reminders.
+- Recurring expense tracking for subscriptions and repeat payments.
+- Push notifications for group settlement reminders.
 - Export filtered transactions as CSV.
+- Biometric authentication (Face ID / fingerprint) for app unlock.
+- Offline support with optimistic UI and background sync.
