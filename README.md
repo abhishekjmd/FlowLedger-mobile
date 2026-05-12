@@ -16,7 +16,7 @@ This repository contains the React Native/Expo frontend. The API lives in the [F
 
 ## Demo
 
-![FlowLedger full walkthrough](docs/screenshots/flowLedger_screen_recording.mp4)
+▶️ [Watch full app walkthrough video recording](https://drive.google.com/file/d/1eO1Ed3PFgh-3ALHK0FbjzsVTIrzEkBjV/view?usp=sharing)
 
 | Login | Sign Up | Home |
 |:---:|:---:|:---:|
